@@ -43,6 +43,23 @@ namespace PowerDms.EsIndexer
                     .Pipeline(_pipelineName));
         }
 
+        public async Task TearDownPipeline()
+        {
+            var url = $"{_domainUrl}/_ingest/pipeline/{_pipelineName}";
+
+            var request = new HttpRequestMessage
+            {
+                RequestUri = new Uri(url),
+                Method = HttpMethod.Delete
+            };
+
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception("Failed to delete pipeline");
+            }
+        }
+
         /// <summary>
         /// Create a ingest attachment pipeline. You should only do this once after 
         /// you setup the index, not every time you run this test app.
@@ -56,15 +73,24 @@ namespace PowerDms.EsIndexer
             var body = new
             {
                 description = "This is a pipeline!",
-                processors = new[] {
+                processors = new object [] {
                     new {
                         attachment = new {
                             field = "data",
                             properties = new [] {
                                 "content",
                                 "content_type",
-                                "content_length"
-                            }
+                                "content_length",
+                                "language"
+                            },
+                            ignore_failure = true
+                        },
+                    },
+                    new {
+                        gsub = new {
+                            field = "attachment.content",
+                            pattern = @"\s+",
+                            replacement = " "
                         }
                     }
                 }

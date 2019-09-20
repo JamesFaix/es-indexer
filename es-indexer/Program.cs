@@ -5,8 +5,8 @@ namespace PowerDms.EsIndexer
 {
     class Program
     {
-        const string _esDomainUrl = "https://search-james-elastic-test-2-tfm7mjwro5ijmarafnmeqpzhaa.us-east-1.es.amazonaws.com";
-        const string _esIndexName = "james-elastic-test-2";
+        const string _esDomainUrl = "https://search-james-elastic-test-l5km3c47amty77yof7hdwsntu4.us-east-1.es.amazonaws.com";
+        const string _esIndexName = "james-elastic-test";
         const string _esPipelineName = "documentpipeline";
         const string _sampleFilesDirectory = @"C:\Users\james.faix\Desktop\ES supported file types - sample files-20190917T180139Z-001\ES supported file types - sample files";
         const string _outputFile = @"C:\Users\james.faix\Desktop\ES supported file types - sample files-20190917T180139Z-001\results.csv";
@@ -15,6 +15,9 @@ namespace PowerDms.EsIndexer
         {
             var esService = new EsService(_esDomainUrl, _esIndexName, _esPipelineName);
             var fileService = new FileService();
+
+            await esService.TearDownPipeline();
+            await esService.CreatePipeline();
 
             //Clear out any documents uploaded from the last run of this test app
             await esService.ClearIndex();
