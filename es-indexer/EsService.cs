@@ -94,7 +94,7 @@ namespace PowerDms.EsIndexer
                     new {
                         set = new {
                             field = "error",
-                            value = "Text extraction failed."
+                            value = "Text extraction failed ({{ _ingest.on_failure_message }})"
                         }
                     },
                     new {
