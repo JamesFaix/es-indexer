@@ -79,20 +79,30 @@ namespace PowerDms.EsIndexer
                             field = "data",
                             properties = new [] {
                                 "content",
-                                "content_type",
-                                "content_length",
-                                "language"
                             },
-                            ignore_failure = true
+                            on_failure = new object [] {
+                                new {
+                                    set = new {
+                                        field = "error",
+                                        value = "Text extraction failed."
+                                    }
+                                },
+                                new {
+                                    set = new {
+                                        field = "attachment.content",
+                                        value = ""
+                                    }
+                                }
+                            }
                         },
                     },
-                    new {
-                        gsub = new {
-                            field = "attachment.content",
-                            pattern = @"\s+",
-                            replacement = " "
-                        }
-                    }
+                    //new {
+                    //    gsub = new {
+                    //        field = "attachment.content",
+                    //        pattern = @"\s+",
+                    //        replacement = " "
+                    //    }
+                    //}
                 }
             };
 
