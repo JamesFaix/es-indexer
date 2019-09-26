@@ -1,25 +1,28 @@
-﻿using System;
+﻿using Nest;
+using System;
 using System.Linq;
-using Nest;
 
 namespace multiple_indexer
 {
     class Program
     {
         const string _EsEndpoint = @"https://search-james-elastic-test-l5km3c47amty77yof7hdwsntu4.us-east-1.es.amazonaws.com";
-        
+
         static void Main(string[] args)
         {
             //Setup connection
 
             var settings = new ConnectionSettings(new Uri(_EsEndpoint))
-                .DefaultMappingFor<Fish>(_ => _.IndexName("fishes"))
-                .DefaultMappingFor<Bird>(_ => _.IndexName("birds"));
+                .DefaultMappingFor<Fish>(_ => _.IndexName("fishes1"))
+                .DefaultMappingFor<Bird>(_ => _.IndexName("birds1"));
 
             var client = new ElasticClient(settings);
 
             //Insert some documents
-
+            
+            //There doesn't seem to be a simple way to index a list of Animals and 
+            //have it figure out which index to send Fish and Birds to.
+            
             client.IndexMany(new[]
             {
                 new Fish
@@ -56,6 +59,7 @@ namespace multiple_indexer
 
             //Search for documents
 
+            //This returns a Pigeon object matching the original object
             var safeBirdsResults = client
                 .Search<Bird>(_ => _
                     .Query(_ =>
@@ -65,23 +69,46 @@ namespace multiple_indexer
                 .Hits
                 .Select(h => h.Source)
                 .ToList();
-            //This returns a Pigeon object matching the original object
 
+            //This returns two Animal objects matching the original Pigeon and Goldfish, but with only base class properties
+            //Making Animal an abstract class will throw an exception here.
             var safeAnimalResults = client
                 .Search<Animal>(_ => _
                     .Index(Indices
                         .Index(typeof(Fish))
                         .And(typeof(Bird))
                     )
-                    .Query(_ => 
-                        _.Term(animal => animal.IsDangerous, false) 
+                    .Query(_ =>
+                        _.Term(animal => animal.IsDangerous, false)
                     )
+                    .Size(1000)
                 )
                 .Hits
                 .Select(h => h.Source)
                 .ToList();
-            //This returns two Animal objects matching the original Pigeon and Goldfish, but with only base class properties
-            //Making Animal an abstract class will throw an exception here.
+
+            //This returns a Fish and Bird object matching the original Pigeon and Goldfish
+            var safeBirdResults2 = client
+                .Search<Bird>(_ => _
+                    .Query(_ =>
+                        _.Term(bird => bird.IsDangerous, false)
+                    )
+                    .Size(1000)
+                );
+
+            var safeFishResults2 = client
+                .Search<Fish>(_ => _
+                    .Query(_ =>
+                        _.Term(fish => fish.IsDangerous, false)
+                    )
+                    .Size(1000)
+                );
+
+            var allResults = safeBirdResults2.Hits.Cast<IHit<Animal>>()
+                .Concat(safeFishResults2.Hits.Cast<IHit<Animal>>())
+                .OrderByDescending(h => h.Score)
+                .Select(h => h.Source)
+                .ToList();
 
             Console.WriteLine("Hello World!");
         }
